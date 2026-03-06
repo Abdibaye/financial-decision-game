@@ -1,16 +1,46 @@
-# React + Vite
+# Financial Decision Game (MVP)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Teen players make 5 everyday financial decisions and see how each choice affects projected wealth at age 40.
 
-Currently, two official plugins are available:
+## MVP Flow
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+1. Intro screen
+2. Setup screen
+3. Scenario screen (3 choices)
+4. Result screen after each choice
+5. Final results after scenario 5
 
-## React Compiler
+## Starting Values
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- Projected Wealth at 40: `$50,000`
+- Cash Available: `$100`
+- Money Habits: `50` (range: `0–100`)
 
-## Expanding the ESLint configuration
+## Game Logic
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+After each choice:
+
+- `cash = cash + cashChange`
+- `projectedWealth = projectedWealth + futureImpact`
+- `moneyHabits = clamp(0..100, moneyHabits + moneyHabitsChange)`
+
+## Scenario Data
+
+Scenario content is data-driven and editable in:
+
+- [src/data/scenarios.js](src/data/scenarios.js)
+
+Each scenario includes:
+
+- `context`
+- `choices` (3 options)
+- `cashChange`
+- `futureImpact`
+- `moneyHabitsChange`
+- `bias`
+- `resultText`
+
+## Run
+
+- `npm install`
+- `npm run dev`
