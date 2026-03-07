@@ -361,6 +361,27 @@ function App() {
               transition={{ duration: 0.3, ease: 'easeOut' }}
             />
           </div>
+
+          <ul className="scenario-progress-list" aria-label="Scenario list">
+            {scenarios.map((item, index) => {
+              const isCompleted = index < currentIndex
+              const isCurrent = index === currentIndex
+
+              return (
+                <li
+                  key={item.id}
+                  className={`scenario-progress-item ${
+                    isCompleted ? 'is-complete' : isCurrent ? 'is-current' : 'is-upcoming'
+                  }`}
+                >
+                  <span className="scenario-toggle" aria-hidden="true" />
+                  <span className="scenario-progress-title">
+                    {item.title.replace(/^Scenario\s\d+\s—\s/, '')}
+                  </span>
+                </li>
+              )
+            })}
+          </ul>
         </aside>
       )}
 
