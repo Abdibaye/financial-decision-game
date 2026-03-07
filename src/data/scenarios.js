@@ -9,6 +9,7 @@ export const scenarios = [
     id: 'after-school-bodega',
     title: 'Scenario 1 — After-School Bodega',
     icon: '🥤',
+    image: '/BodegaFinal.png',
     context:
       'School just ended and you stop at the corner bodega with friends. Everyone is grabbing snacks and drinks before heading home. You realize you spend about $6 here most school days. Your friend jokes: “This place probably makes half its money from us.”',
     choices: [
@@ -45,6 +46,7 @@ export const scenarios = [
     id: 'uber-vs-subway',
     title: 'Scenario 2 — Uber vs Subway',
     icon: '🚇',
+    image: '/UberFinal.png',
     context:
       'You and your friends are heading home after hanging out. The subway costs about $3. An Uber ride would cost about $22. Your friend says: “Let’s just Uber — it’s faster.”',
     choices: [
@@ -81,6 +83,7 @@ export const scenarios = [
     id: 'food-delivery',
     title: 'Scenario 3 — Food Delivery',
     icon: '🍔',
+    image: '/GamerFinal.png',
     context:
       'You’re home studying and don’t feel like cooking. Food delivery would cost about $18. There’s food in the kitchen, but ordering would be easier.',
     choices: [
@@ -117,6 +120,7 @@ export const scenarios = [
     id: 'sneaker-drop',
     title: 'Scenario 4 — Sneaker Drop',
     icon: '👟',
+    image: '/SneakerDropFinal.png',
     context:
       'Everyone at school is talking about a sneaker release this weekend. Price: $240. Your friend says: “If you don’t buy them now, you’ll regret it.”',
     choices: [
@@ -153,6 +157,7 @@ export const scenarios = [
     id: 'paycheck-bitcoin',
     title: 'Scenario 5 — First Paycheck & Bitcoin Screenshot',
     icon: '₿',
+    image: '/PaycheckFinal.png',
     context:
       'You just received your first paycheck from your part-time job. After taxes it is $320. Later that day a friend shows you a screenshot on their phone. Their Bitcoin investment is up $800. They say: “You should buy some before it goes higher.”',
     choices: [
