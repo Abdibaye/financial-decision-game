@@ -6,7 +6,6 @@ import { scenarios, STARTING_VALUES } from './data/scenarios'
 function App() {
   const [phase, setPhase] = useState('intro')
   const [currentIndex, setCurrentIndex] = useState(0)
-  const [userName, setUserName] = useState('')
   const [cash, setCash] = useState(STARTING_VALUES.cash)
   const [projectedWealth, setProjectedWealth] = useState(STARTING_VALUES.projectedWealth)
   const [moneyHabits, setMoneyHabits] = useState(STARTING_VALUES.moneyHabits)
@@ -109,7 +108,6 @@ function App() {
     playClickSound()
     setPhase('intro')
     setCurrentIndex(0)
-    setUserName('')
     setCash(STARTING_VALUES.cash)
     setProjectedWealth(STARTING_VALUES.projectedWealth)
     setMoneyHabits(STARTING_VALUES.moneyHabits)
@@ -133,7 +131,7 @@ function App() {
   }, [phase, scenario])
 
   return (
-    <main className="game-layout">
+    <main className={`game-layout ${phase === 'intro' ? 'intro-layout' : ''}`}>
       <AnimatePresence>
         <motion.div
           key={currentBackgroundImage}
@@ -148,18 +146,20 @@ function App() {
         </motion.div>
       </AnimatePresence>
 
-      <aside className="score-panel" aria-label="Running score">
-        <h3>Running Score</h3>
-        <ScoreCard label="Projected Wealth at 40" value={projectedWealth} isCurrency />
-        <ScoreCard label="Cash Available" value={cash} isCurrency />
-        <ScoreCard label="Money Habits" value={moneyHabits} suffix="/100" />
+      {phase !== 'intro' && (
+        <aside className="score-panel" aria-label="Running score">
+          <h3>Running Score</h3>
+          <ScoreCard label="Projected Wealth at 40" value={projectedWealth} isCurrency />
+          <ScoreCard label="Cash Available" value={cash} isCurrency />
+          <ScoreCard label="Money Habits" value={moneyHabits} suffix="/100" />
 
-        <AnimatePresence>
-          {particles.map(p => (
-            <CoinParticle key={p.id} x={p.x} y={p.y} isPositive={p.isPositive} />
-          ))}
-        </AnimatePresence>
-      </aside>
+          <AnimatePresence>
+            {particles.map(p => (
+              <CoinParticle key={p.id} x={p.x} y={p.y} isPositive={p.isPositive} />
+            ))}
+          </AnimatePresence>
+        </aside>
+      )}
 
       <section className="game-shell">
         <section className="card-stage">
@@ -173,38 +173,26 @@ function App() {
               transition={{ duration: 0.28 }}
             >
               {phase === 'intro' && (
-                <>
-                  <p className="eyebrow">Financial Decision Game</p>
-                  <h1>Could your everyday decisions make you a millionaire by 40?</h1>
+                <div className="intro-content">
+                  <h1>Can your everyday decisions <br /> make you a <span className="gradient-text">millionaire by 40?</span></h1>
                   <p className="card-copy">Let’s find out.</p>
-                  <div className="name-input-group">
-                    <input
-                      type="text"
-                      className="name-input"
-                      placeholder="Enter your name..."
-                      value={userName}
-                      onChange={(e) => setUserName(e.target.value)}
-                    />
-                  </div>
                   <motion.button
                     className="action-button"
-                    disabled={!userName.trim()}
                     onClick={() => {
                       playClickSound()
                       setPhase('setup')
                     }}
                     whileHover={{ y: -2, scale: 1.01 }}
                     whileTap={{ scale: 0.985 }}
-                    style={{ opacity: userName.trim() ? 1 : 0.5 }}
                   >
-                    Start the Simulation
+                    Start
                   </motion.button>
-                </>
+                </div>
               )}
 
               {phase === 'setup' && (
                 <>
-                  <p className="eyebrow">Welcome, {userName}</p>
+                  <p className="eyebrow">Welcome</p>
                   <h2>You are 16 years old.</h2>
                   <p className="card-copy">
                     Over the next few minutes you will make a series of everyday financial decisions.
@@ -307,7 +295,7 @@ function App() {
               {phase === 'final' && (
                 <>
                   <p className="eyebrow">Simulation Complete</p>
-                  <h2>{userName}'s Outcome at 40</h2>
+                  <h2>Your Outcome at 40</h2>
 
                   <div className="rank-display" style={{ marginBottom: '2rem', textAlign: 'center' }}>
                     <p className="eyebrow">Your Final Rank</p>
@@ -342,29 +330,42 @@ function App() {
         </section>
       </section>
 
-      <aside className="progress-panel" aria-label="Decision progress">
-        <h3>Progress</h3>
-        <button
-          className="sound-toggle"
-          onClick={() => {
-            setSoundOn((value) => !value)
-          }}
-        >
-          {soundOn ? '🔊 Sound On' : '🔈 Sound Off'}
-        </button>
-        <p className="progress-text">
-          {canShowPanels
-            ? `Decision ${Math.min(currentIndex + 1, scenarios.length)} of ${scenarios.length}`
-            : `Decision 0 of ${scenarios.length}`}
-        </p>
-        <div className="progress-track">
-          <motion.div
-            className="progress-fill"
-            animate={{ width: `${progressPercent}%` }}
-            transition={{ duration: 0.3, ease: 'easeOut' }}
-          />
+      {phase !== 'intro' && (
+        <aside className="progress-panel" aria-label="Decision progress">
+          <h3>Progress</h3>
+          <p className="progress-text">
+            {canShowPanels
+              ? `Decision ${Math.min(currentIndex + 1, scenarios.length)} of ${scenarios.length}`
+              : `Decision 1 of ${scenarios.length}`}
+          </p>
+          <div className="progress-track">
+            <motion.div
+              className="progress-fill"
+              animate={{ width: `${progressPercent}%` }}
+              transition={{ duration: 0.3, ease: 'easeOut' }}
+            />
+          </div>
+        </aside>
+      )}
+
+      <div className="bottom-stats-bar">
+        <div className="stat-item">
+          <span className="stat-value" style={{ color: '#4ade80' }}>${projectedWealth.toLocaleString()}</span>
+          <span className="stat-label">Projected Wealth at 40</span>
         </div>
-      </aside>
+        <div className="stat-item">
+          <span className="stat-value" style={{ color: '#38bdf8' }}>${cash.toLocaleString()}</span>
+          <span className="stat-label">Cash Available</span>
+        </div>
+        <div className="stat-item">
+          <span className="stat-value">50/100</span>
+          <span className="stat-label">Money Habits Score</span>
+        </div>
+        <div className="stat-item">
+          <span className="stat-value">{scenarios.length - currentIndex}</span>
+          <span className="stat-label">Decisions Ahead</span>
+        </div>
+      </div>
     </main>
   )
 }
