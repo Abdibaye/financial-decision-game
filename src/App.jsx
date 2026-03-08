@@ -388,24 +388,26 @@ function App() {
         </aside>
       )}
 
-      <div className={`bottom-stats-bar ${phase === 'intro' ? 'intro-stats-bar' : ''}`}>
-        <div className="stat-item">
-          <span className="stat-value" style={{ color: '#4ade80' }}>${projectedWealth.toLocaleString()}</span>
-          <span className="stat-label">Projected Wealth at 40</span>
+      {phase === 'intro' && (
+        <div className="bottom-stats-bar intro-stats-bar">
+          <div className="stat-item">
+            <span className="stat-value" style={{ color: '#4ade80' }}>${projectedWealth.toLocaleString()}</span>
+            <span className="stat-label">Projected Wealth at 40</span>
+          </div>
+          <div className="stat-item">
+            <span className="stat-value" style={{ color: '#38bdf8' }}>${cash.toLocaleString()}</span>
+            <span className="stat-label">Cash Available</span>
+          </div>
+          <div className="stat-item">
+            <span className="stat-value">{moneyHabits}/100</span>
+            <span className="stat-label">Money Habits Score</span>
+          </div>
+          <div className="stat-item">
+            <span className="stat-value">{scenarios.length - currentIndex}</span>
+            <span className="stat-label">Decisions Ahead</span>
+          </div>
         </div>
-        <div className="stat-item">
-          <span className="stat-value" style={{ color: '#38bdf8' }}>${cash.toLocaleString()}</span>
-          <span className="stat-label">Cash Available</span>
-        </div>
-        <div className="stat-item">
-          <span className="stat-value">{moneyHabits}/100</span>
-          <span className="stat-label">Money Habits Score</span>
-        </div>
-        <div className="stat-item">
-          <span className="stat-value">{scenarios.length - currentIndex}</span>
-          <span className="stat-label">Decisions Ahead</span>
-        </div>
-      </div>
+      )}
     </main>
   )
 }
