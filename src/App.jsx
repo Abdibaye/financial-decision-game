@@ -171,6 +171,7 @@ function App() {
             label="Projected Wealth at 40"
             value={projectedWealth}
             isCurrency
+            tone="score-wealth"
             change={phase === 'outcome' ? lastChoice?.futureImpact : null}
             prevValue={phase === 'outcome' ? lastChoice?.prevValues?.projectedWealth : null}
           />
@@ -178,13 +179,15 @@ function App() {
             label="Cash Available"
             value={cash}
             isCurrency
+            tone="score-cash"
             change={phase === 'outcome' ? lastChoice?.cashChange : null}
             prevValue={phase === 'outcome' ? lastChoice?.prevValues?.cash : null}
           />
           <ScoreCard
-            label="Money Habits"
+            label="Money Habits Score"
             value={moneyHabits}
             suffix="/100"
+            tone="score-habits"
             change={phase === 'outcome' ? lastChoice?.moneyHabitsChange : null}
             prevValue={phase === 'outcome' ? lastChoice?.prevValues?.moneyHabits : null}
           />
@@ -407,7 +410,7 @@ function App() {
   )
 }
 
-function ScoreCard({ label, value, isCurrency = false, suffix = '', change = null, prevValue = null }) {
+function ScoreCard({ label, value, isCurrency = false, suffix = '', change = null, prevValue = null, tone = '' }) {
   const [display, setDisplay] = useState(
     isCurrency ? `$${value.toLocaleString()}` : value.toLocaleString()
   )
@@ -437,8 +440,8 @@ function ScoreCard({ label, value, isCurrency = false, suffix = '', change = nul
   }
 
   return (
-    <div className="score-card">
-      <p>{label}</p>
+    <div className={`score-card ${tone}`}>
+      <p className="score-label">{label}</p>
       {prevValue !== null ? (
         <div className="score-transition">
           <span className="prev-value">
