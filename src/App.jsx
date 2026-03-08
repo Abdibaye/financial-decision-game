@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { AnimatePresence, motion, useSpring, useTransform } from 'framer-motion'
+import { AnimatePresence, motion, useSpring } from 'framer-motion'
 import './App.css'
 import { scenarios, STARTING_VALUES } from './data/scenarios'
 
@@ -12,18 +12,28 @@ function App() {
   const [lastChoice, setLastChoice] = useState(null)
   const [decisionResults, setDecisionResults] = useState([])
   const [particles, setParticles] = useState([])
-  const [soundOn, setSoundOn] = useState(true)
+  const [soundOn] = useState(true)
   const audioContextRef = useRef(null)
+  void motion
 
   const scenario = scenarios[currentIndex]
+
+  const completedDecisions = useMemo(() => {
+    if (phase === 'intro' || phase === 'setup') {
+      return 0
+    }
+
+    const completed = currentIndex + (phase === 'outcome' || phase === 'final-score' || phase === 'final-recap' ? 1 : 0)
+    return Math.max(0, Math.min(completed, scenarios.length))
+  }, [phase, currentIndex])
 
   const progressPercent = useMemo(() => {
     if (phase === 'intro' || phase === 'setup') {
       return 0
     }
 
-    return ((currentIndex + (phase === 'final' ? 1 : 0)) / scenarios.length) * 100
-  }, [phase, currentIndex])
+    return (completedDecisions / scenarios.length) * 100
+  }, [phase, completedDecisions])
 
   const clampMoneyHabits = (value) => Math.max(0, Math.min(100, value))
 
@@ -57,19 +67,13 @@ function App() {
     playTone(420, 60, 'triangle', 0.024)
   }
 
-  const playOutcomeSound = (futureImpact) => {
-    if (futureImpact >= 0) {
-      playTone(560, 85, 'triangle', 0.03)
-      setTimeout(() => playTone(740, 130, 'sine', 0.024), 70)
-      return
-    }
-
-    playTone(250, 95, 'sawtooth', 0.02)
-    setTimeout(() => playTone(180, 135, 'triangle', 0.018), 60)
+  const playOutcomeSound = () => {
+    playTone(520, 90, 'triangle', 0.028)
+    setTimeout(() => playTone(660, 120, 'sine', 0.022), 65)
   }
 
   const handleChoice = (choice) => {
-    playOutcomeSound(choice.futureImpact)
+    playOutcomeSound()
 
     const prevValues = {
       cash,
@@ -87,8 +91,7 @@ function App() {
       const newParticles = Array.from({ length: 8 }).map((_, i) => ({
         id: Date.now() + i,
         isPositive,
-        x: Math.random() * 100 - 50, // Random spread
-        y: Math.random() * 100 - 50
+        x: Math.random() * 100 - 50 // Random spread
       }))
       setParticles(newParticles)
       setTimeout(() => setParticles([]), 2000)
@@ -112,7 +115,7 @@ function App() {
     const nextIndex = currentIndex + 1
 
     if (nextIndex >= scenarios.length) {
-      setPhase('final')
+      setPhase('final-score')
       return
     }
 
@@ -132,24 +135,24 @@ function App() {
     setDecisionResults([])
   }
 
-  const getRank = (wealth) => {
-    if (wealth >= 1000000) return { title: '👑 Wealth Wizard', color: '#f97316' }
-    if (wealth >= 500000) return { title: '📈 Savvy Saver', color: '#0ea5a0' }
-    if (wealth >= 100000) return { title: '🧗 Climbing the Ladder', color: '#8b5cf6' }
-    return { title: '💸 Impulse Explorer', color: '#94a3b8' }
+  const getCardTransitionDuration = (currentPhase) => {
+    if (currentPhase === 'outcome') return 0.36
+    if (currentPhase === 'decision') return 0.25
+    if (currentPhase === 'final-score') return 0.5
+    return 0.28
   }
 
   const canShowPanels = phase !== 'intro' && phase !== 'setup'
 
   const currentBackgroundImage = useMemo(() => {
-    if (phase === 'intro' || phase === 'setup' || phase === 'final') {
+    if (phase === 'intro' || phase === 'setup' || phase === 'final-score' || phase === 'final-recap') {
       return '/Mar7Skyline.png'
     }
     return scenario?.image || '/Mar7Skyline.png'
   }, [phase, scenario])
 
   return (
-    <main className={`game-layout ${phase === 'intro' || phase === 'final' ? 'intro-layout' : ''}`}>
+    <main className={`game-layout ${phase === 'intro' || phase === 'setup' ? 'intro-layout' : ''}`}>
       <AnimatePresence>
         <motion.div
           key={currentBackgroundImage}
@@ -164,7 +167,7 @@ function App() {
         </motion.div>
       </AnimatePresence>
 
-      {phase !== 'intro' && phase !== 'final' && (
+      {canShowPanels && (
         <aside className="score-panel" aria-label="Running score">
           <h3>Running Score</h3>
           <ScoreCard
@@ -204,12 +207,12 @@ function App() {
         <section className="card-stage">
           <AnimatePresence mode="wait">
             <motion.article
-              className="game-card"
+              className={`game-card ${phase === 'final-score' || phase === 'final-recap' ? 'final-full-card' : ''}`}
               key={`${phase}-${currentIndex}`}
               initial={{ opacity: 0, y: 18 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -18 }}
-              transition={{ duration: 0.28 }}
+              transition={{ duration: getCardTransitionDuration(phase), ease: 'easeOut' }}
             >
               {phase === 'intro' && (
                 <div className="intro-content">
@@ -297,32 +300,6 @@ function App() {
                     {lastChoice.wealthExplanation}
                   </motion.p>
 
-                  <div className="result-cards-container">
-                    <motion.div
-                      className="result-card-item compound-card"
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.2 }}
-                    >
-                      <p className="card-label">Projected Wealth Impact</p>
-                      <strong className={`card-value ${lastChoice.futureImpact >= 0 ? 'positive' : 'negative'}`}>
-                        {lastChoice.futureImpact >= 0 ? '+' : '-'}${Math.abs(lastChoice.futureImpact).toLocaleString()}
-                      </strong>
-                      <p className="card-subtext">Compound value at age 40</p>
-                    </motion.div>
-
-                    <motion.div
-                      className="result-card-item bias-card"
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.3 }}
-                    >
-                      <p className="card-label">Behavioral Bias</p>
-                      <strong className="card-value">{lastChoice.bias}</strong>
-                      <p className="card-subtext">{lastChoice.biasExplanation}</p>
-                    </motion.div>
-                  </div>
-
                   <motion.button
                     className="action-button"
                     onClick={goToNextScenario}
@@ -335,11 +312,19 @@ function App() {
                 </>
               )}
 
-              {phase === 'final' && (
-                <SummaryScreen
+              {phase === 'final-score' && (
+                <FinalScoreScreen
                   projectedWealth={projectedWealth}
-                  cash={cash}
                   moneyHabits={moneyHabits}
+                  onContinue={() => {
+                    playClickSound()
+                    setPhase('final-recap')
+                  }}
+                />
+              )}
+
+              {phase === 'final-recap' && (
+                <DecisionRecapScreen
                   decisionResults={decisionResults}
                   onReplay={replay}
                 />
@@ -349,7 +334,7 @@ function App() {
         </section>
       </section>
 
-      {phase !== 'intro' && phase !== 'final' && (
+      {canShowPanels && (
         <aside className="progress-panel" aria-label="Decision progress">
           <h3>Progress</h3>
           <p className="progress-text">
@@ -357,6 +342,7 @@ function App() {
               ? `Decision ${Math.min(currentIndex + 1, scenarios.length)} of ${scenarios.length}`
               : `Decision 1 of ${scenarios.length}`}
           </p>
+          <p className="progress-subtext">{Math.max(scenarios.length - completedDecisions, 0)} decisions ahead</p>
           <div className="progress-track">
             <motion.div
               className="progress-fill"
@@ -367,8 +353,9 @@ function App() {
 
           <ul className="scenario-progress-list" aria-label="Scenario list">
             {scenarios.map((item, index) => {
-              const isCompleted = index < currentIndex
-              const isCurrent = index === currentIndex
+              const allComplete = phase === 'final-score' || phase === 'final-recap'
+              const isCompleted = allComplete || index < completedDecisions
+              const isCurrent = !allComplete && phase === 'decision' && index === currentIndex
 
               return (
                 <li
@@ -468,7 +455,7 @@ function ScoreCard({ label, value, isCurrency = false, suffix = '', change = nul
   )
 }
 
-function CoinParticle({ x, y, isPositive }) {
+function CoinParticle({ x, isPositive }) {
   return (
     <motion.div
       className={`coin-particle ${isPositive ? 'positive' : 'negative'}`}
@@ -558,19 +545,21 @@ function WealthVisualizer({ value }) {
   )
 }
 
-function getChoiceTag(label) {
-  if (/skip|wait|research|subway and keep|eat at home/i.test(label)) {
-    return '🧠 Strategic'
+function buildOutcomeSubline(projectedWealth) {
+  if (projectedWealth > STARTING_VALUES.projectedWealth) {
+    const multiplier = (projectedWealth / STARTING_VALUES.projectedWealth).toFixed(1)
+    return `You nearly ${multiplier}x your starting wealth — in 5 decisions.`
   }
 
-  if (/buy|order|uber|grab/i.test(label)) {
-    return '⚡ Quick Move'
+  if (projectedWealth < STARTING_VALUES.projectedWealth) {
+    const loss = STARTING_VALUES.projectedWealth - projectedWealth
+    return `Your choices cost you $${loss.toLocaleString()} — now you know why.`
   }
 
-  return '🎲 Your Move'
+  return 'You broke even — in 5 decisions.'
 }
 
-function SummaryScreen({ projectedWealth, cash, moneyHabits, decisionResults, onReplay }) {
+function FinalScoreScreen({ projectedWealth, moneyHabits, onContinue }) {
   const moneyStyleData = useMemo(() => {
     if (moneyHabits >= 80) return {
       title: "The Long Game",
@@ -594,111 +583,80 @@ function SummaryScreen({ projectedWealth, cash, moneyHabits, decisionResults, on
     }
   }, [moneyHabits])
 
-  const wealthIncrease = projectedWealth - STARTING_VALUES.projectedWealth
-  const multiplier = (projectedWealth / STARTING_VALUES.projectedWealth).toFixed(1)
-
   return (
-    <div className="summary-container">
-      <aside className="summary-left-panel">
+    <div className="final-screen final-score-screen">
+      <header className="summary-header">
         <p className="eyebrow">Final Score</p>
-        <div className="final-score-cards">
-          <div className="final-score-card">
-            <p>Projected Wealth at 40</p>
-            <div className="final-val-group">
-              <strong className="wealth-val">${projectedWealth.toLocaleString()}</strong>
-              <span className="final-change positive">+{wealthIncrease.toLocaleString()}</span>
-            </div>
-          </div>
-          <div className="final-score-card">
-            <p>Cash Available</p>
-            <strong className="cash-val">${cash.toLocaleString()}</strong>
-          </div>
-          <div className="final-score-card">
-            <p>Money Habits</p>
-            <div className="habits-progress-container">
-              <strong>{moneyHabits}/100</strong>
-              <div className="habits-bar-mini">
-                <div className="habits-fill-mini" style={{ width: `${moneyHabits}%` }} />
-              </div>
-            </div>
-          </div>
-        </div>
-      </aside>
-
-      <div className="summary-main">
-        <header className="summary-header">
-          <p className="eyebrow">Your Projected Wealth at 40</p>
-          <motion.h1
-            className="final-wealth-amount"
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ type: 'spring', stiffness: 100 }}
-          >
-            ${projectedWealth.toLocaleString()}
-          </motion.h1>
-          <p className="wealth-context">
-            You nearly <strong>{multiplier}x your starting wealth</strong> — in 5 decisions.
-          </p>
-          <p className="wealth-disclaimer">Assumes 8% returns from age 16–40</p>
-        </header>
-
-        <div className="money-style-card">
-          <div className="style-icon">↗</div>
-          <div className="style-content">
-            <div className="style-header">
-              <p className="eyebrow" style={{ margin: 0, color: 'var(--accent-secondary)' }}>Money Style</p>
-              <span className="style-score">{moneyHabits}/100 Money Habits</span>
-            </div>
-            <h2 className="style-title">{moneyStyleData.title}</h2>
-            <p className="style-desc">{moneyStyleData.desc}</p>
-          </div>
-        </div>
-
-        <section className="decision-recap">
-          <p className="eyebrow">Decision Recap</p>
-          <div className="recap-list">
-            {decisionResults.map((res, idx) => (
-              <div key={idx} className="recap-row">
-                <span className="recap-number">{String(idx + 1).padStart(2, '0')}</span>
-                <div className="recap-info">
-                  <p className="recap-scenario">{res.scenarioTitle}</p>
-                  <p className="recap-choice">"{res.choiceText}"</p>
-                </div>
-                <div className="recap-impact">
-                  <span className={`impact-value ${res.futureImpact >= 0 ? 'positive' : 'negative'}`}>
-                    {res.futureImpact >= 0 ? '+' : '-'}${Math.abs(res.futureImpact).toLocaleString()}
-                  </span>
-                  <span className={`result-tag ${res.resultTag.toLowerCase()}`}>
-                    {res.resultTag}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <motion.button
-          className="action-button play-again-btn"
-          onClick={onReplay}
-          whileHover={{ y: -2, scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
+        <motion.h1
+          className="final-wealth-amount"
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: 'spring', stiffness: 100 }}
         >
-          Play Again
-        </motion.button>
+          ${projectedWealth.toLocaleString()}
+        </motion.h1>
+        <p className="wealth-context">{buildOutcomeSubline(projectedWealth)}</p>
+        <p className="wealth-disclaimer">Assumes 8% returns from age 16–40</p>
+      </header>
+
+      <div className="money-style-card">
+        <div className="style-icon">↗</div>
+        <div className="style-content">
+          <div className="style-header">
+            <p className="eyebrow" style={{ margin: 0, color: 'var(--accent-secondary)' }}>Money Style</p>
+            <span className="style-score">{moneyHabits}/100 Money Habits</span>
+          </div>
+          <h2 className="style-title">{moneyStyleData.title}</h2>
+          <p className="style-desc">{moneyStyleData.desc}</p>
+        </div>
       </div>
 
-      <aside className="summary-right-panel">
-        <p className="eyebrow">Progress</p>
-        <h3 className="stage-complete">Stage 1 Complete</h3>
-        <ul className="scenario-list-final">
-          {scenarios.map(s => (
-            <li key={s.id} className="scenario-item-final">
-              <span className="dot" />
-              {s.title.replace(/^Scenario\s\d+\s—\s/, '')}
-            </li>
+      <motion.button
+        className="action-button play-again-btn"
+        onClick={onContinue}
+        whileHover={{ y: -2, scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+      >
+        View Decision Recap
+      </motion.button>
+    </div>
+  )
+}
+
+function DecisionRecapScreen({ decisionResults, onReplay }) {
+  return (
+    <div className="final-screen final-recap-screen">
+      <section className="decision-recap">
+        <p className="eyebrow">Decision Recap</p>
+        <div className="recap-list">
+          {decisionResults.map((res, idx) => (
+            <div key={idx} className="recap-row">
+              <span className="recap-number">{String(idx + 1).padStart(2, '0')}</span>
+              <div className="recap-info">
+                <p className="recap-scenario">{res.scenarioTitle}</p>
+                <p className="recap-choice">"{res.choiceText}"</p>
+              </div>
+              <div className="recap-impact">
+                <span className={`impact-value ${res.futureImpact >= 0 ? 'positive' : 'negative'}`}>
+                  {res.futureImpact >= 0 ? '+' : '-'}${Math.abs(res.futureImpact).toLocaleString()}
+                </span>
+                <span className={`result-tag ${res.resultTag.toLowerCase()}`}>
+                  {res.resultTag}
+                </span>
+              </div>
+            </div>
           ))}
-        </ul>
-      </aside>
+        </div>
+      </section>
+
+      <motion.button
+        className="action-button play-again-btn"
+        onClick={onReplay}
+        whileHover={{ y: -2, scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+      >
+        Play Again
+      </motion.button>
     </div>
   )
 }
