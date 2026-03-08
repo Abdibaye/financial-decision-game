@@ -2,8 +2,14 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion, useSpring } from 'framer-motion'
 import './App.css'
 import { scenarios, STARTING_VALUES } from './data/scenarios'
+import { moneyStyles } from './data/moneyStyles'
 
 function App() {
+  const scenarioAmbienceById = {
+    'after-school-bodega': '/Teenagers_Party_Walla_CU_Chatter_OCP-1218-039.mp3',
+    'uber-vs-subway': '/New_York_City_Traffic_Ambience_ODY-1406-017.mp3'
+  }
+
   const [phase, setPhase] = useState('intro')
   const [currentIndex, setCurrentIndex] = useState(0)
   const [cash, setCash] = useState(STARTING_VALUES.cash)
@@ -14,6 +20,10 @@ function App() {
   const [particles, setParticles] = useState([])
   const [soundOn] = useState(true)
   const audioContextRef = useRef(null)
+  const ambienceAudioRef = useRef(null)
+  const resultChimeAudioRef = useRef(null)
+  const activeAmbienceIdRef = useRef(null)
+  const fadeFrameRef = useRef(null)
   void motion
 
   const scenario = scenarios[currentIndex]
@@ -72,8 +82,125 @@ function App() {
     setTimeout(() => playTone(660, 120, 'sine', 0.022), 65)
   }
 
-  const handleChoice = (choice) => {
-    playOutcomeSound()
+  const cancelFade = () => {
+    if (fadeFrameRef.current !== null) {
+      cancelAnimationFrame(fadeFrameRef.current)
+      fadeFrameRef.current = null
+    }
+  }
+
+  const fadeAudioVolume = (audio, targetVolume, durationMs, onComplete) => {
+    if (!audio) {
+      onComplete?.()
+      return
+    }
+
+    cancelFade()
+
+    if (durationMs <= 0) {
+      audio.volume = targetVolume
+      onComplete?.()
+      return
+    }
+
+    const startingVolume = audio.volume
+    const startTime = performance.now()
+
+    const tick = (now) => {
+      const progress = Math.min((now - startTime) / durationMs, 1)
+      audio.volume = startingVolume + (targetVolume - startingVolume) * progress
+
+      if (progress < 1) {
+        fadeFrameRef.current = requestAnimationFrame(tick)
+        return
+      }
+
+      fadeFrameRef.current = null
+      onComplete?.()
+    }
+
+    fadeFrameRef.current = requestAnimationFrame(tick)
+  }
+
+  const fadeOutAndStopAmbience = (durationMs = 600) => new Promise((resolve) => {
+    const ambienceAudio = ambienceAudioRef.current
+
+    if (!ambienceAudio || ambienceAudio.paused) {
+      resolve()
+      return
+    }
+
+    fadeAudioVolume(ambienceAudio, 0, durationMs, () => {
+      ambienceAudio.pause()
+      ambienceAudio.currentTime = 0
+      activeAmbienceIdRef.current = null
+      resolve()
+    })
+  })
+
+  useEffect(() => {
+    const ambienceAudio = new Audio()
+    ambienceAudio.preload = 'auto'
+    ambienceAudio.loop = true
+    ambienceAudio.volume = 0
+
+    const resultChimeAudio = new Audio('/Gentle Ding Clicks 1.mp3')
+    resultChimeAudio.preload = 'auto'
+    resultChimeAudio.loop = false
+    resultChimeAudio.volume = 0.14
+
+    ambienceAudioRef.current = ambienceAudio
+    resultChimeAudioRef.current = resultChimeAudio
+
+    return () => {
+      cancelFade()
+      ambienceAudio.pause()
+      resultChimeAudio.pause()
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!soundOn || phase !== 'decision') {
+      return
+    }
+
+    const ambienceSrc = scenarioAmbienceById[scenario?.id]
+    if (!ambienceSrc) {
+      return
+    }
+
+    const ambienceAudio = ambienceAudioRef.current
+    if (!ambienceAudio) {
+      return
+    }
+
+    if (activeAmbienceIdRef.current !== scenario.id) {
+      ambienceAudio.src = ambienceSrc
+      ambienceAudio.currentTime = 0
+      activeAmbienceIdRef.current = scenario.id
+    }
+
+    ambienceAudio.volume = 0
+    void ambienceAudio.play().catch(() => {})
+    fadeAudioVolume(ambienceAudio, 0.12, 800)
+  }, [phase, scenario, soundOn])
+
+  useEffect(() => {
+    if (!soundOn || phase !== 'outcome') {
+      return
+    }
+
+    const chimeAudio = resultChimeAudioRef.current
+    if (!chimeAudio) {
+      return
+    }
+
+    chimeAudio.currentTime = 0
+    void chimeAudio.play().catch(() => {})
+  }, [phase, soundOn])
+
+  const handleChoice = async (choice) => {
+    await fadeOutAndStopAmbience(600)
 
     const prevValues = {
       cash,
@@ -126,6 +253,7 @@ function App() {
 
   const replay = () => {
     playClickSound()
+    void fadeOutAndStopAmbience(0)
     setPhase('intro')
     setCurrentIndex(0)
     setCash(STARTING_VALUES.cash)
@@ -559,30 +687,46 @@ function buildOutcomeSubline(projectedWealth) {
   return 'You broke even — in 5 decisions.'
 }
 
-function FinalScoreScreen({ projectedWealth, moneyHabits, onContinue }) {
-  const moneyStyleData = useMemo(() => {
-    if (moneyHabits >= 80) return {
-      title: "The Long Game",
-      desc: "You consistently made decisions that favor future wealth. Your habits are working for you."
-    }
-    if (moneyHabits >= 65) return {
-      title: "Building Momentum",
-      desc: "Good decisions are starting to compound. Keep the streak going."
-    }
-    if (moneyHabits >= 50) return {
-      title: "Learning the Game",
-      desc: "You’re starting to see how small choices shape long-term outcomes. Some decisions helped, others held you back."
-    }
-    if (moneyHabits >= 35) return {
-      title: "Wake Up Call",
-      desc: "Several costly choices slowed your progress — and now you know why."
-    }
-    return {
-      title: "Fresh Start",
-      desc: "This run showed how expensive habits can become. The good news: every decision is a chance to reset."
-    }
-  }, [moneyHabits])
+function MoneyStyleStrip({ moneyHabits }) {
+  const currentTier = useMemo(
+    () => moneyStyles.find((tier) => moneyHabits >= tier.minScore) ?? moneyStyles[moneyStyles.length - 1],
+    [moneyHabits]
+  )
 
+  return (
+    <section className="money-style-strip" aria-label="Money style tiers">
+      <div className="money-style-strip-head">
+        <p className="money-style-strip-title">Money Style — All Five Tiers</p>
+        <p className="money-style-strip-score">{moneyHabits}/100</p>
+      </div>
+
+      <ul className="money-style-tier-list">
+        {moneyStyles.map((tier) => {
+          const isCurrent = tier.name === currentTier.name
+
+          return (
+            <li
+              key={tier.name}
+              className={`money-style-tier ${isCurrent ? 'is-current' : ''}`}
+              style={{ '--tier-color': tier.color }}
+            >
+              <div className="money-style-tier-left">
+                <span className="money-style-tier-icon" aria-hidden="true">{tier.icon}</span>
+                <div className="money-style-tier-copy">
+                  <p className="money-style-tier-name">{tier.name}</p>
+                  <p className="money-style-tier-description">{tier.description}</p>
+                </div>
+              </div>
+              <span className="money-style-tier-range">{tier.rangeLabel}</span>
+            </li>
+          )
+        })}
+      </ul>
+    </section>
+  )
+}
+
+function FinalScoreScreen({ projectedWealth, moneyHabits, onContinue }) {
   return (
     <div className="final-screen final-score-screen">
       <header className="summary-header">
@@ -599,17 +743,7 @@ function FinalScoreScreen({ projectedWealth, moneyHabits, onContinue }) {
         <p className="wealth-disclaimer">Assumes 8% returns from age 16–40</p>
       </header>
 
-      <div className="money-style-card">
-        <div className="style-icon">↗</div>
-        <div className="style-content">
-          <div className="style-header">
-            <p className="eyebrow" style={{ margin: 0, color: 'var(--accent-secondary)' }}>Money Style</p>
-            <span className="style-score">{moneyHabits}/100 Money Habits</span>
-          </div>
-          <h2 className="style-title">{moneyStyleData.title}</h2>
-          <p className="style-desc">{moneyStyleData.desc}</p>
-        </div>
-      </div>
+      <MoneyStyleStrip moneyHabits={moneyHabits} />
 
       <motion.button
         className="action-button play-again-btn"
