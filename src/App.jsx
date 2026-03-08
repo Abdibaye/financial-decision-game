@@ -385,7 +385,7 @@ function App() {
         </aside>
       )}
 
-      <div className="bottom-stats-bar">
+      <div className={`bottom-stats-bar ${phase === 'intro' ? 'intro-stats-bar' : ''}`}>
         <div className="stat-item">
           <span className="stat-value" style={{ color: '#4ade80' }}>${projectedWealth.toLocaleString()}</span>
           <span className="stat-label">Projected Wealth at 40</span>

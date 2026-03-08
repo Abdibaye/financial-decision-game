@@ -31,7 +31,7 @@
 
 .game-layout.intro-layout {
   grid-template-columns: 1fr;
-  padding: 3rem;
+  padding: 1.5rem 2rem 1rem;
 }
 
 .background-container {
@@ -142,6 +142,11 @@
   box-shadow: none;
 }
 
+.intro-layout .game-card {
+  min-height: auto;
+  padding: 1.5rem 2rem 0.5rem;
+}
+
 .intro-content {
   text-align: center;
   display: flex;
@@ -150,15 +155,16 @@
 }
 
 .intro-content h1 {
-  font-size: clamp(3rem, 6vw, 4.5rem);
-  margin-bottom: 2rem;
+  font-size: clamp(2.5rem, 5.2vw, 4rem);
+  line-height: 1.06;
+  margin-bottom: 1.25rem;
 }
 
 .intro-content .action-button {
   align-self: center;
-  margin-top: 1rem;
-  padding: 1.5rem 4rem;
-  font-size: 1.5rem;
+  margin-top: 0.5rem;
+  padding: 1.1rem 3.4rem;
+  font-size: 1.3rem;
   border-radius: 999px;
 }
 
@@ -202,6 +208,10 @@ h2 {
   margin-bottom: 2rem;
   max-width: 60ch;
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.intro-layout .card-copy {
+  margin-bottom: 1.1rem;
 }
 
 /* Buttons */
@@ -826,6 +836,42 @@ h2 {
 }
 
 @media (max-width: 640px) {
+  .game-layout.intro-layout {
+    padding: 1rem 1rem 0.5rem;
+  }
+
+  .intro-layout .game-card {
+    padding: 1.1rem 1rem 0.4rem;
+  }
+
+  .intro-content h1 {
+    font-size: clamp(1.95rem, 9.4vw, 2.55rem);
+    margin-bottom: 0.9rem;
+  }
+
+  .intro-layout .card-copy {
+    margin-bottom: 0.8rem;
+  }
+
+  .intro-content .action-button {
+    padding: 0.9rem 2.8rem;
+    font-size: 1.1rem;
+  }
+
+  .intro-stats-bar {
+    flex-wrap: wrap;
+    gap: 0.8rem 1.2rem;
+    padding: 0.35rem 0.5rem 0;
+  }
+
+  .intro-stats-bar .stat-value {
+    font-size: 1.15rem;
+  }
+
+  .intro-stats-bar .stat-label {
+    font-size: 0.52rem;
+  }
+
   .game-card {
     padding: 1.5rem;
     border-radius: 24px;
@@ -868,6 +914,21 @@ h2 {
   border: none;
   padding: 2rem;
   margin-top: 2rem;
+}
+
+.intro-stats-bar {
+  gap: clamp(1.25rem, 3vw, 2.25rem);
+  padding: 0.75rem 1rem 0.25rem;
+  margin-top: 0.5rem;
+}
+
+.intro-stats-bar .stat-value {
+  font-size: clamp(1.35rem, 2.2vw, 1.65rem);
+}
+
+.intro-stats-bar .stat-label {
+  font-size: 0.58rem;
+  letter-spacing: 0.12em;
 }
 
 .stat-item {
