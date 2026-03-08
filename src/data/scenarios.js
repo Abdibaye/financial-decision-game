@@ -7,11 +7,11 @@ export const STARTING_VALUES = {
 export const scenarios = [
   {
     id: 'after-school-bodega',
-    title: 'Scenario 1 — After-School Bodega',
+    title: 'Scenario 1 — After School Bodega',
     icon: '🥤',
     image: '/BodegaFinal.png',
     context:
-      'School just ended and you stop at the corner bodega with friends. Everyone is grabbing snacks and drinks before heading home. You realize you spend about $6 here most school days. Your friend jokes: “This place probably makes half its money from us.”',
+      'School just ended. You stop at the corner bodega with friends. Everyone is grabbing snacks and drinks. You spend $6 most days. Your friend jokes: “This place probably makes half its money on us.”',
     choices: [
       {
         label: 'Drink only',
