@@ -5,8 +5,8 @@ import { scenarios, STARTING_VALUES } from './data/scenarios'
 import { moneyStyles } from './data/moneyStyles'
 
 const SCENARIO_AMBIENCE_BY_ID = {
-  'after-school-bodega': '/teen_chatter.mp3',
-  'uber-vs-subway': '/new_york.mp3'
+  'after-school-bodega': '/teen_chatter_bodega.mp3',
+  'uber-vs-subway': '/nyc_street_ambience.mp3'
 }
 
 function App() {
