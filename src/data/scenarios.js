@@ -37,11 +37,11 @@ export const scenarios = [
       },
       {
         label: 'Snack + drink',
-        cashChange: -7,
+        cashChange: -6,
         futureImpact: -9200,
         moneyHabitsChange: -3,
         feedbackHeadline: 'That purchase cost more than it seemed.',
-        wealthExplanation: 'Spending $7 most school days can quietly drain money that could have grown over time.',
+        wealthExplanation: 'Spending $6 most school days can quietly drain money that could have grown over time.',
         bias: 'Present Bias',
         biasExplanation: 'Small rewards now often feel more important than larger rewards later.',
         resultTag: 'COSTLY',
