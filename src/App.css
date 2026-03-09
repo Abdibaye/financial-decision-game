@@ -356,24 +356,6 @@ h2 {
   line-height: 1.25;
 }
 
-/* Sound Toggle */
-.sound-toggle {
-  background: transparent;
-  border: 1px solid var(--glass-border);
-  color: var(--text-muted);
-  padding: 0.5rem 1rem;
-  border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.sound-toggle:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--text-main);
-}
-
 /* Outcome Screen */
 .result-cards-container {
   display: grid;

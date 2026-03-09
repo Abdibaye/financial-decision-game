@@ -4,12 +4,12 @@ import './App.css'
 import { scenarios, STARTING_VALUES } from './data/scenarios'
 import { moneyStyles } from './data/moneyStyles'
 
-function App() {
-  const scenarioAmbienceById = {
-    'after-school-bodega': '/Teenagers_Party_Walla_CU_Chatter_OCP-1218-039.mp3',
-    'uber-vs-subway': '/New_York_City_Traffic_Ambience_ODY-1406-017.mp3'
-  }
+const SCENARIO_AMBIENCE_BY_ID = {
+  'after-school-bodega': '/teen_chatter.mp3',
+  'uber-vs-subway': '/new_york.mp3'
+}
 
+function App() {
   const [phase, setPhase] = useState('intro')
   const [currentIndex, setCurrentIndex] = useState(0)
   const [cash, setCash] = useState(STARTING_VALUES.cash)
@@ -18,7 +18,7 @@ function App() {
   const [lastChoice, setLastChoice] = useState(null)
   const [decisionResults, setDecisionResults] = useState([])
   const [particles, setParticles] = useState([])
-  const [soundOn] = useState(true)
+  const [isAudioUnlocked, setIsAudioUnlocked] = useState(false)
   const audioContextRef = useRef(null)
   const ambienceAudioRef = useRef(null)
   const resultChimeAudioRef = useRef(null)
@@ -48,7 +48,7 @@ function App() {
   const clampMoneyHabits = (value) => Math.max(0, Math.min(100, value))
 
   const playTone = (frequency, durationMs, type = 'sine', gainValue = 0.025) => {
-    if (!soundOn || typeof window === 'undefined' || !window.AudioContext) {
+    if (!isAudioUnlocked || typeof window === 'undefined' || !window.AudioContext) {
       return
     }
 
@@ -77,11 +77,6 @@ function App() {
     playTone(420, 60, 'triangle', 0.024)
   }
 
-  const playOutcomeSound = () => {
-    playTone(520, 90, 'triangle', 0.028)
-    setTimeout(() => playTone(660, 120, 'sine', 0.022), 65)
-  }
-
   const cancelFade = () => {
     if (fadeFrameRef.current !== null) {
       cancelAnimationFrame(fadeFrameRef.current)
@@ -104,9 +99,13 @@ function App() {
     }
 
     const startingVolume = audio.volume
-    const startTime = performance.now()
+    let startTime = null
 
     const tick = (now) => {
+      if (startTime === null) {
+        startTime = now
+      }
+
       const progress = Math.min((now - startTime) / durationMs, 1)
       audio.volume = startingVolume + (targetVolume - startingVolume) * progress
 
@@ -138,13 +137,98 @@ function App() {
     })
   })
 
+  const unlockAudio = async () => {
+    if (isAudioUnlocked || typeof window === 'undefined') {
+      return true
+    }
+
+    let unlocked = false
+
+    try {
+      if (window.AudioContext) {
+        if (!audioContextRef.current || audioContextRef.current.state === 'closed') {
+          audioContextRef.current = new window.AudioContext()
+        }
+
+        if (audioContextRef.current.state !== 'running') {
+          await audioContextRef.current.resume()
+        }
+
+        unlocked = audioContextRef.current.state === 'running'
+      }
+    } catch (error) {
+      console.warn('WebAudio unlock failed:', error)
+    }
+
+    const warmupTargets = [ambienceAudioRef.current, resultChimeAudioRef.current].filter(
+      (audio) => audio && audio.src
+    )
+
+    const warmupResults = await Promise.allSettled(
+      warmupTargets.map(async (audio) => {
+        const prevMuted = audio.muted
+        const prevVolume = audio.volume
+        const prevTime = audio.currentTime
+
+        audio.muted = true
+        audio.volume = 0
+        audio.currentTime = 0
+        await audio.play()
+        audio.pause()
+        audio.currentTime = prevTime
+        audio.muted = prevMuted
+        audio.volume = prevVolume
+      })
+    )
+
+    if (warmupResults.some((result) => result.status === 'fulfilled')) {
+      unlocked = true
+    }
+
+    if (unlocked) {
+      setIsAudioUnlocked(true)
+      return true
+    }
+
+    return false
+  }
+
+  const playScenarioAmbience = (scenarioId) => {
+    if (!isAudioUnlocked || !scenarioId) {
+      return
+    }
+
+    const ambienceSrc = SCENARIO_AMBIENCE_BY_ID[scenarioId]
+    if (!ambienceSrc) {
+      return
+    }
+
+    const ambienceAudio = ambienceAudioRef.current
+    if (!ambienceAudio) {
+      return
+    }
+
+    if (activeAmbienceIdRef.current !== scenarioId) {
+      ambienceAudio.src = ambienceSrc
+      ambienceAudio.load()
+      ambienceAudio.currentTime = 0
+      activeAmbienceIdRef.current = scenarioId
+    }
+
+    ambienceAudio.volume = 0
+    void ambienceAudio.play().catch((error) => {
+      console.warn('Ambience audio could not start:', ambienceSrc, error)
+    })
+    fadeAudioVolume(ambienceAudio, 0.12, 800)
+  }
+
   useEffect(() => {
     const ambienceAudio = new Audio()
     ambienceAudio.preload = 'auto'
     ambienceAudio.loop = true
     ambienceAudio.volume = 0
 
-    const resultChimeAudio = new Audio('/Gentle Ding Clicks 1.mp3')
+    const resultChimeAudio = new Audio('/result_chime.mp3')
     resultChimeAudio.preload = 'auto'
     resultChimeAudio.loop = false
     resultChimeAudio.volume = 0.14
@@ -160,11 +244,29 @@ function App() {
   }, [])
 
   useEffect(() => {
-    if (!soundOn || phase !== 'decision') {
+    if (isAudioUnlocked || typeof window === 'undefined') {
       return
     }
 
-    const ambienceSrc = scenarioAmbienceById[scenario?.id]
+    const unlockOnFirstInteraction = () => {
+      void unlockAudio()
+    }
+
+    window.addEventListener('pointerdown', unlockOnFirstInteraction, { once: true, capture: true })
+    window.addEventListener('keydown', unlockOnFirstInteraction, { once: true, capture: true })
+
+    return () => {
+      window.removeEventListener('pointerdown', unlockOnFirstInteraction, { capture: true })
+      window.removeEventListener('keydown', unlockOnFirstInteraction, { capture: true })
+    }
+  }, [isAudioUnlocked])
+
+  useEffect(() => {
+    if (!isAudioUnlocked || phase !== 'decision') {
+      return
+    }
+
+    const ambienceSrc = SCENARIO_AMBIENCE_BY_ID[scenario?.id]
     if (!ambienceSrc) {
       return
     }
@@ -176,17 +278,20 @@ function App() {
 
     if (activeAmbienceIdRef.current !== scenario.id) {
       ambienceAudio.src = ambienceSrc
+      ambienceAudio.load()
       ambienceAudio.currentTime = 0
       activeAmbienceIdRef.current = scenario.id
     }
 
     ambienceAudio.volume = 0
-    void ambienceAudio.play().catch(() => {})
+    void ambienceAudio.play().catch((error) => {
+      console.warn('Ambience audio could not start:', ambienceSrc, error)
+    })
     fadeAudioVolume(ambienceAudio, 0.12, 800)
-  }, [phase, scenario, soundOn])
+  }, [phase, scenario, isAudioUnlocked])
 
   useEffect(() => {
-    if (!soundOn || phase !== 'outcome') {
+    if (!isAudioUnlocked || phase !== 'outcome') {
       return
     }
 
@@ -197,9 +302,10 @@ function App() {
 
     chimeAudio.currentTime = 0
     void chimeAudio.play().catch(() => {})
-  }, [phase, soundOn])
+  }, [phase, isAudioUnlocked])
 
   const handleChoice = async (choice) => {
+    await unlockAudio()
     await fadeOutAndStopAmbience(600)
 
     const prevValues = {
@@ -238,6 +344,7 @@ function App() {
   }
 
   const goToNextScenario = () => {
+    void unlockAudio()
     playClickSound()
     const nextIndex = currentIndex + 1
 
@@ -246,6 +353,7 @@ function App() {
       return
     }
 
+    playScenarioAmbience(scenarios[nextIndex]?.id)
     setCurrentIndex(nextIndex)
     setLastChoice(null)
     setPhase('decision')
@@ -349,6 +457,7 @@ function App() {
                   <motion.button
                     className="action-button"
                     onClick={() => {
+                      void unlockAudio()
                       playClickSound()
                       setPhase('setup')
                     }}
@@ -371,7 +480,9 @@ function App() {
                   <motion.button
                     className="action-button"
                     onClick={() => {
+                      void unlockAudio()
                       playClickSound()
+                      playScenarioAmbience(scenarios[0]?.id)
                       setPhase('decision')
                     }}
                     whileHover={{ y: -2, scale: 1.01 }}
