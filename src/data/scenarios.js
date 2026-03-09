@@ -107,7 +107,7 @@ export const scenarios = [
         feedbackHeadline: 'Better — but the habit still adds up.',
         wealthExplanation: 'Small digital purchases can quietly add up when repeated over time.',
         bias: 'Present Bias',
-        biasExplanation: 'The $6 today feels more real than $9,200 later.',
+        biasExplanation: 'The $5 today feels more real than $8,600 later.',
         resultTag: 'MODERATE',
       },
       {
