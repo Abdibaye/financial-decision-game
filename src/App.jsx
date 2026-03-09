@@ -337,7 +337,9 @@ function App() {
         scenarioTitle: scenario.title.replace(/^Scenario\s\d+\s—\s/, ''),
         choiceText: choice.label,
         futureImpact: choice.futureImpact,
-        resultTag: choice.resultTag
+        resultTag: choice.resultTag,
+        bias: choice.bias,
+        biasExplanation: choice.biasExplanation
       }
     ])
     setPhase('outcome')
@@ -538,6 +540,19 @@ function App() {
                   >
                     {lastChoice.wealthExplanation}
                   </motion.p>
+
+                  {lastChoice.resultTag !== 'SMART' && (
+                    <motion.section
+                      className="result-card-item bias-card"
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.28, delay: 0.1, ease: 'easeOut' }}
+                    >
+                      <p className="card-label">Behavioral Bias</p>
+                      <p className="card-value">{lastChoice.bias}</p>
+                      <p className="card-subtext">{lastChoice.biasExplanation}</p>
+                    </motion.section>
+                  )}
 
                   <motion.button
                     className="action-button"
@@ -880,6 +895,9 @@ function DecisionRecapScreen({ decisionResults, onReplay }) {
               <div className="recap-info">
                 <p className="recap-scenario">{res.scenarioTitle}</p>
                 <p className="recap-choice">"{res.choiceText}"</p>
+                {res.resultTag !== 'SMART' && (
+                  <p className="recap-bias">Bias: {res.bias} — {res.biasExplanation}</p>
+                )}
               </div>
               <div className="recap-impact">
                 <span className={`impact-value ${res.futureImpact >= 0 ? 'positive' : 'negative'}`}>

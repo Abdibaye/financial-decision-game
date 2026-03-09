@@ -411,6 +411,11 @@ h2 {
   color: var(--accent-secondary);
 }
 
+.consequence-copy + .bias-card {
+  margin-top: 0.4rem;
+  max-width: 620px;
+}
+
 .score-transition {
   display: flex;
   align-items: center;
@@ -687,6 +692,13 @@ h2 {
   margin: 0;
   font-style: italic;
   opacity: 0.8;
+}
+
+.recap-bias {
+  margin: 0.2rem 0 0;
+  font-size: 0.72rem;
+  color: rgba(196, 211, 228, 0.86);
+  line-height: 1.35;
 }
 
 .recap-impact {
